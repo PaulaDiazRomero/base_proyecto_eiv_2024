@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "*.S": "arm",
+        "acceso_esclusivo.h": "c",
+        "controlador.h": "c",
+        "es_lcd.h": "c",
+        "lcd.h": "c",
+        "pantalla.h": "c",
+        "stdio.h": "c"
+    }
+}

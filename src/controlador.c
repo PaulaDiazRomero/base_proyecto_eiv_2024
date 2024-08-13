@@ -13,7 +13,7 @@ static Controlador controlador;
 
 static void ingresaTemperatura(Mef *m,const Evento *e);
 static void ingresaTiempo(Mef *m,const Evento *e);
-
+static void carga(Mef *m,const Evento *e);
 
 Mef * Controlador_init(int temperaturaMaxima,int tiempoMaximo)
 {
@@ -83,9 +83,42 @@ static void ingresaTiempo(Mef *m,const Evento *e)
         else{
             Mef_transiciona(m, ingresaTemperatura);    
         }
+    break;case Mensaje_ASTERISCO:   
+        if(controlador.tiempo != 0){
+            Mef_transiciona(m, carga);
+        }
+        else{
+            Mef_transiciona(m, ingresaTiempo);    
+        }
     break;default:
     break;
     }
 }
 
 
+static void carga(Mef *m,const Evento *e)
+{
+    static const Evento establecePosicionDeseadaDentro = {.mensaje=Mensaje_SPOS_DENTRO};
+    static const Evento muestraCargando = {.mensaje=Mensaje_CARGANDO};
+    static const Evento muestraEnTransito = {.mensaje=Mensaje_CARGANDO_EN_TRANSITO};
+    static const Evento muestraFuera = {.mensaje=Mensaje_CARGANDO_FUERA};
+    static const Evento averiguaPosicion = {.mensaje=Mensaje_POSP};
+
+    const Mensaje mensaje = Evento_obtMensaje(e);
+    switch (mensaje)
+    {
+    case Mensaje_ENTRADA:
+        Mef_enviaEvento(m,&establecePosicionDeseadaDentro);
+        Mef_enviaEvento(m,&muestraCargando);
+    break;case Mensaje_RESPUESTA_OK:
+        Mef_enviaEvento(m,&averiguaPosicion);
+    break;case Mensaje_RESPUESTA_EN_TRANSITO:
+        Mef_enviaEvento(m,&muestraEnTransito);
+        Mef_enviaEvento(m,&averiguaPosicion);
+    break;case Mensaje_RESPUESTA_FUERA:
+        Mef_enviaEvento(m,&muestraFuera);
+        Mef_enviaEvento(m,&averiguaPosicion);
+    break;default:
+    break;
+    }
+}

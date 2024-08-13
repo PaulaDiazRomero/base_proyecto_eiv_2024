@@ -10,7 +10,6 @@ typedef void (*Estado)(Mef *m,const Evento *e);
 
 struct Mef{
     FuenteEventos fuente;
-    ObservadorEventos observador;
     Estado inicial;
     Estado estado;
     ColaEventos eventos;

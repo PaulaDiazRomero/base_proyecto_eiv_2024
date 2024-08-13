@@ -6,12 +6,13 @@
 #ifndef MAX_EVENTOS
 #define MAX_EVENTOS 16
 #else
-_Static_assert(((MAX_EVENTOS - 1) & MAX_EVENTOS) == 0, "MAX_EVENTOS debe ser potencia de dos")
+_Static_assert(((MAX_EVENTOS - 1) & MAX_EVENTOS) == 0, "MAX_EVENTOS debe ser potencia de dos");
 #endif
 
 typedef struct ColaEventos ColaEventos;
 
 struct ColaEventos{
+    ObservadorEventos observador;
     const Evento *eventos[MAX_EVENTOS];
     unsigned escritura;
     unsigned lectura;
@@ -28,8 +29,8 @@ void ColaEventos_init(ColaEventos *self);
  * 
  * @param self La cola
  * @param evento El evento
- * @retval true Evento puesto en cola
- * @retval false Operación fallida por cola llena
+ * @return true Evento puesto en cola
+ * @return false Operación fallida por cola llena
  */
 bool ColaEventos_pon(ColaEventos *self,const Evento *evento);
 /**
@@ -48,4 +49,13 @@ bool ColaEventos_toma(ColaEventos *self,const Evento **evento);
  * @param self La cola
  */
 void ColaEventos_borra(ColaEventos *self);
+
+/**
+ * @brief Produce un observador de eventos que introduce los eventos
+ * directamente en una cola de eventos
+ * 
+ * @param self La cola
+ * @return ObservadorEventos* El observador 
+ */
+ObservadorEventos *ColaEventos_obtObservador(ColaEventos *self);
 #endif

@@ -12,15 +12,8 @@ static struct{
     .salida={.mensaje=Mensaje_SALIDA}
 };
 
-static bool observadorRecibeEvento(ObservadorEventos *observador,const Evento *evento)
-{
-    return Mef_recibeEvento(container_of(observador,Mef,observador),evento);
-}
-
 void Mef_init(Mef *self,Estado inicial)
 {
-    static const ObservadorEventos_VT observadorVt = {.recibeEvento=observadorRecibeEvento};
-    self->observador.vptr_ = &observadorVt;
     self->inicial = inicial;
     self->estado = NULL;
     self->transicion = false;
@@ -69,7 +62,7 @@ void Mef_finaliza(Mef *self)
 
 ObservadorEventos *Mef_obtObservador(Mef *self)
 {
-    return &self->observador;
+    return ColaEventos_obtObservador(&self->eventos);
 }
 
 bool Mef_enviaEvento(Mef *self,const Evento *e)

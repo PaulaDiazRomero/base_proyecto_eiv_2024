@@ -6,36 +6,17 @@
 #include "controlador.h"
 #include "container_of.h"
 #include "mef.h"
+#include "pantalla.h"
+#include "receptor.h"
 
 static void seleccionaFilaTeclado(unsigned fila);
 static unsigned leeColumnasTeclado(void);
 
-typedef struct Pantalla{
-    ObservadorEventos observador;
-    ColaEventos cola;
-    Lcd *lcd;
-}Pantalla;
-
-
-static bool Pantalla_recibeEvento(ObservadorEventos *obs,const Evento *e)
-{
-    Pantalla *const self = container_of(obs,Pantalla,observador);
-    return ColaEventos_pon(&self->cola,e);
-}
-
-static void Pantalla_init(Pantalla *self, Lcd *lcd){
-    static const ObservadorEventos_VT observadorVt ={.recibeEvento=Pantalla_recibeEvento};
-    self->observador.vptr_ = &observadorVt;
-    self->lcd = lcd;
-    ColaEventos_init(&self->cola);
-}
-static ObservadorEventos *Pantalla_obtObservador(Pantalla *self){
-    return &self->observador;
-}
-static void Pantalla_ejecuta(Pantalla *self);
 
 int main(void)
 {
+    static uint32_t tiempoInicial;
+    static EventoInt caracterRecibido={.evento.mensaje=MensajeInt_CARACTER_RECIBIDO};
     static Pantalla pantalla;
     static const EventoInt eventosTecla[]={
         [CodigoTecla_0]={.evento.mensaje=MensajeInt_DIGITO,.valor=0}, //"Tecla 0 presionada! \n",
@@ -53,10 +34,13 @@ int main(void)
         [CodigoTecla_NO_VALIDO]={.evento.mensaje=Mensaje_TECLA_NO_VALIDA},//"Error al leer tecla! \n",
     };
     Mef *const controlador = Controlador_init(180,24*60);
+    Mef *const receptor = Receptor_init();
+
     Teclado teclado;
     Tempo_inicializa();
     Lcd *const miLcd = inicializaLcd();
     Pantalla_init(&pantalla,miLcd);
+    Mef_registraObservador(receptor,Mef_obtObservador(controlador));
     Mef_registraObservador(controlador,Pantalla_obtObservador(&pantalla));
     Serie_init(9600);
     Pin_configuraSalida(PIN_LED,PUSH_PULL,V_BAJA);
@@ -67,18 +51,27 @@ int main(void)
     Lcd_escribeCadena(miLcd,"*Iniciar ciclo");
     Lcd_establecePosicion(miLcd,1,0);
     Lcd_escribeCadena(miLcd,"#Configurar");
-
+    tiempoInicial = Tempo_obtMilisegundos();
     for(;;)
     {
-        Tempo_esperaMilisegundos(10);
-        Teclado_procesa(&teclado);
-        if(Teclado_hayEntradaPendiente(&teclado)){
-            CodigoTecla cod = Teclado_obtEntrada(&teclado);
-            Pin_ponBajo(PIN_LED);
-            Mef_recibeEvento(controlador,&eventosTecla[cod].evento);
-        }else{
-            Pin_ponAlto(PIN_LED);
+        const uint32_t tiempo = Tempo_obtMilisegundos();
+        char c;
+        if(Serie_intentaRecibirCaracter(&c)){
+            caracterRecibido.valor=c;
+            Mef_recibeEvento(receptor,&caracterRecibido.evento);
+        }        
+        if(tiempo-tiempoInicial >= 10){
+            Teclado_procesa(&teclado);
+            if(Teclado_hayEntradaPendiente(&teclado)){
+                CodigoTecla cod = Teclado_obtEntrada(&teclado);
+                Pin_ponBajo(PIN_LED);
+                Mef_recibeEvento(controlador,&eventosTecla[cod].evento);
+            }else{
+                Pin_ponAlto(PIN_LED);
+            }
+            tiempoInicial = tiempo;
         }
+        Mef_ejecuta(receptor);
         Mef_ejecuta(controlador);
         Pantalla_ejecuta(&pantalla);
     }
@@ -99,41 +92,4 @@ static unsigned leeColumnasTeclado(void)
     unsigned valor;
     Bus_lee(&columnas, &valor);
     return valor;
-}
-
-#include <stdio.h>
-
-static void Pantalla_escribeValor(Pantalla *self,int valor)
-{
-    enum{TAMANO_BUFFER=17};
-    static char buffer[TAMANO_BUFFER];
-    Lcd *const lcd = self->lcd;
-    Lcd_establecePosicion(lcd,1,0);
-    Lcd_escribeCadena(lcd,"                ");
-    Lcd_establecePosicion(lcd,1,0);
-    snprintf(buffer,TAMANO_BUFFER-1,"%d",valor);
-    Lcd_escribeCadena(lcd,buffer);
-}
-static void Pantalla_ejecuta(Pantalla *self)
-{
-    Lcd *const lcd = self->lcd;
-    const Evento *e;
-    if(!ColaEventos_toma(&self->cola,&e)) return;
-
-    switch(Evento_obtMensaje(e)){
-    case MensajeInt_INGRESA_TEMP:{
-        const int valor = container_of(e,const EventoInt,evento)->valor;
-        Lcd_establecePosicion(lcd,0,0);
-        Lcd_escribeCadena(lcd,"Ingr.Temperatura");
-        Pantalla_escribeValor(self,valor);
-    }
-    break;case MensajeInt_INGRESA_TIEMPO:{
-        const int valor = container_of(e,const EventoInt,evento)->valor;
-        Lcd_establecePosicion(lcd,0,0);
-        Lcd_escribeCadena(lcd,"Ingresa Tiempo  ");
-        Pantalla_escribeValor(self,valor);
-    }
-    break;default:
-    break;
-    }
 }
