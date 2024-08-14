@@ -11,7 +11,11 @@ enum DefinicionMensajes{
     MensajeInt_INGRESA_TIEMPO,
     Mensaje_TECLA_NO_VALIDA,
     Mensaje_SPOS_DENTRO,
+    Mensaje_SPOS_FUERA,
     Mensaje_POSP,
+    MensajeInt_STEMP,
+    Mensaje_TEMPP,
+    MensajeInt_STIEMPO,
     Mensaje_RESPUESTA_OK,
     Mensaje_RESPUESTA_EN_TRANSITO,
     Mensaje_RESPUESTA_FUERA,
@@ -25,7 +29,7 @@ enum DefinicionMensajes{
 };
 
 typedef struct EventoInt{
-    Evento evento;
+    const Evento evento;
     int valor;             //Transformación de mensaje de lectura a int (sólo si es int, sino no hace la conversión)
 }EventoInt;
 

@@ -118,6 +118,8 @@ static void carga(Mef *m,const Evento *e)
     break;case Mensaje_RESPUESTA_FUERA:
         Mef_enviaEvento(m,&muestraFuera);
         Mef_enviaEvento(m,&averiguaPosicion);
+    break; case Mensaje_RESPUESTA_ERROR:
+        Mef_transiciona(m, carga);
     break;default:
     break;
     }

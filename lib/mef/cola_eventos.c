@@ -1,5 +1,6 @@
 #include "cola_eventos.h"
 #include "container_of.h"
+#include <stdio.h>
 
 static bool observadorRecibeEvento(ObservadorEventos *obs,const Evento *e)
 {
@@ -16,13 +17,13 @@ void ColaEventos_init(ColaEventos *self)
 bool ColaEventos_pon(ColaEventos *self,const Evento *evento)
 {
     if (self->escritura - self->lectura >= MAX_EVENTOS) return false;
-    self->eventos[(self->escritura++)&MAX_EVENTOS] = evento;
+    self->eventos[(self->escritura++) % MAX_EVENTOS] = evento;
     return true;
 }
 bool ColaEventos_toma(ColaEventos *self,const Evento **evento)
 {
     if (self->escritura == self->lectura) return false;
-    *evento = self->eventos[(self->lectura++)&MAX_EVENTOS];
+    *evento = self->eventos[(self->lectura++) % MAX_EVENTOS];
     return true;
 }
 
