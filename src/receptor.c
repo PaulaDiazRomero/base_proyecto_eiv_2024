@@ -47,7 +47,7 @@ typedef struct EntradaTabla{
 static void procesaLinea(Mef *m)
 {
     static const EntradaTabla casosEspeciales[]={
-        {.clave="ok",.valor={.mensaje=Mensaje_RESPUESTA_OK}},
+        {.clave="OK",.valor={.mensaje=Mensaje_RESPUESTA_OK}},
         {.clave="dentro",.valor={.mensaje=Mensaje_RESPUESTA_DENTRO}},
         {.clave="fuera",.valor={.mensaje=Mensaje_RESPUESTA_FUERA}},
         {.clave="en transito",.valor={.mensaje=Mensaje_RESPUESTA_EN_TRANSITO}}

@@ -26,6 +26,7 @@ void Pantalla_ejecuta(Pantalla *self)
 {
     Lcd *const lcd = self->lcd;
     const Evento *e;
+
     if(!ColaEventos_toma(&self->cola,&e)) return;
 
     switch(Evento_obtMensaje(e)){
@@ -58,6 +59,42 @@ void Pantalla_ejecuta(Pantalla *self)
         Lcd_escribeCadena(lcd,"Cargando");
         Lcd_establecePosicion(lcd,1,0);
         Lcd_escribeCadena(lcd,"Fuera");
+    }
+    break;case Mensaje_CALENTANDO:{
+        Lcd_establecePosicion(lcd,0,0);
+        Lcd_escribeCadena(lcd,"Calentando       "); 
+        Lcd_establecePosicion(lcd,1,0);
+        Lcd_escribeCadena(lcd,"                ");
+    }
+    break;case MensajeInt_CALENTANDO_TEMP:{
+        const int t = container_of(e,const EventoInt,evento)->valor;
+        Lcd_establecePosicion(lcd,0,0);
+        Lcd_escribeCadena(lcd,"Calentando       ");
+        Lcd_establecePosicion(lcd,1,0);
+        snprintf (self->buffer, TAMANO_BUFFER,"Temperatura %-4d",t);
+        Lcd_escribeCadena(lcd,self->buffer);
+    }
+    break;case MensajeInt_TRATAMIENTO:{
+        const int t = container_of(e,const EventoInt,evento)->valor;
+        Lcd_establecePosicion(lcd,0,0);
+        Lcd_escribeCadena(lcd,"Tratamiento      "); 
+        Lcd_establecePosicion(lcd,1,0);
+        snprintf (self->buffer, TAMANO_BUFFER,"Faltan %5d min",t);
+        Lcd_escribeCadena(lcd,self->buffer);
+    }
+    break;case Mensaje_ENFRIAMIENTO:{
+        Lcd_establecePosicion(lcd,0,0);
+        Lcd_escribeCadena(lcd,"Enfriando       "); 
+        Lcd_establecePosicion(lcd,1,0);
+        Lcd_escribeCadena(lcd,"                ");
+    }
+    break;case MensajeInt_ENFRIAMIENTO:{
+        const int t = container_of(e,const EventoInt,evento)->valor;
+        Lcd_establecePosicion(lcd,0,0);
+        Lcd_escribeCadena(lcd,"Enfriando       ");
+        Lcd_establecePosicion(lcd,1,0);
+        snprintf (self->buffer, TAMANO_BUFFER,"Temperatura %-4d",t);
+        Lcd_escribeCadena(lcd,self->buffer);
     }
     break;default:
     break;

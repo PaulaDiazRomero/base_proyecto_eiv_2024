@@ -8,6 +8,8 @@
 #include "mef.h"
 #include "pantalla.h"
 #include "receptor.h"
+#include "transmisor.h"
+#include "temporizador.h"
 
 static void seleccionaFilaTeclado(unsigned fila);
 static unsigned leeColumnasTeclado(void);
@@ -35,6 +37,9 @@ int main(void)
     };
     Mef *const controlador = Controlador_init(180,24*60);
     Mef *const receptor = Receptor_init();
+    Temporizador temporizador;
+    
+    Temporizador_init(&temporizador);
 
     Teclado teclado;
     Tempo_inicializa();
@@ -52,6 +57,10 @@ int main(void)
     Lcd_establecePosicion(miLcd,1,0);
     Lcd_escribeCadena(miLcd,"#Configurar");
     tiempoInicial = Tempo_obtMilisegundos();
+    Transmisor_init();
+    Mef_registraObservador(controlador,Transmisor_obtObservador());
+    Mef_registraObservador(controlador,Temporizador_obtObservador(&temporizador));
+    Temporizador_registraObservador(&temporizador,Mef_obtObservador(controlador));
     for(;;)
     {
         const uint32_t tiempo = Tempo_obtMilisegundos();
@@ -74,6 +83,8 @@ int main(void)
         Mef_ejecuta(receptor);
         Mef_ejecuta(controlador);
         Pantalla_ejecuta(&pantalla);
+        Transmisor_ejecuta();
+        Temporizador_ejecuta(&temporizador);
     }
     return 0;
 }

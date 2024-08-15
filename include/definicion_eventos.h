@@ -26,6 +26,13 @@ enum DefinicionMensajes{
     Mensaje_CARGANDO_EN_TRANSITO,
     Mensaje_CARGANDO_FUERA,
     MensajeInt_CARACTER_RECIBIDO,
+    Mensaje_CALENTANDO,
+    MensajeInt_CALENTANDO_TEMP,
+    Mensaje_TIEMPO_CUMPLIDO,
+    MensajeInt_TEMPORIZA,
+    MensajeInt_TRATAMIENTO,
+    Mensaje_ENFRIAMIENTO,
+    MensajeInt_ENFRIAMIENTO,
 };
 
 typedef struct EventoInt{
