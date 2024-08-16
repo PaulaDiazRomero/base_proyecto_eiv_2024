@@ -50,15 +50,21 @@ void Pantalla_ejecuta(Pantalla *self)
     }
     break;case Mensaje_CARGANDO_EN_TRANSITO:{
         Lcd_establecePosicion(lcd,0,0);
-        Lcd_escribeCadena(lcd,"Cargando");
+        Lcd_escribeCadena(lcd,"Cargando        ");
         Lcd_establecePosicion(lcd,1,0);
-        Lcd_escribeCadena(lcd,"En Transito");
+        Lcd_escribeCadena(lcd,"En Transito     ");
     }
     break;case Mensaje_CARGANDO_FUERA:{
         Lcd_establecePosicion(lcd,0,0);
-        Lcd_escribeCadena(lcd,"Cargando");
+        Lcd_escribeCadena(lcd,"Cargando        ");
         Lcd_establecePosicion(lcd,1,0);
-        Lcd_escribeCadena(lcd,"Fuera");
+        Lcd_escribeCadena(lcd,"Fuera           ");
+    }
+    break;case Mensaje_CARGANDO_DENTRO:{
+        Lcd_establecePosicion(lcd,0,0);
+        Lcd_escribeCadena(lcd,"Cargando        ");
+        Lcd_establecePosicion(lcd,1,0);
+        Lcd_escribeCadena(lcd,"Dentro          ");
     }
     break;case Mensaje_CALENTANDO:{
         Lcd_establecePosicion(lcd,0,0);
@@ -95,6 +101,30 @@ void Pantalla_ejecuta(Pantalla *self)
         Lcd_establecePosicion(lcd,1,0);
         snprintf (self->buffer, TAMANO_BUFFER,"Temperatura %-4d",t);
         Lcd_escribeCadena(lcd,self->buffer);
+    }
+    break;case Mensaje_DESCARGANDO:{
+        Lcd_establecePosicion(lcd,0,0);
+        Lcd_escribeCadena(lcd,"Descargando      "); 
+        Lcd_establecePosicion(lcd,1,0);
+        Lcd_escribeCadena(lcd,"                ");
+    }
+    break;case Mensaje_DESCARGANDO_EN_TRANSITO:{
+        Lcd_establecePosicion(lcd,0,0);
+        Lcd_escribeCadena(lcd,"Descargando      ");
+        Lcd_establecePosicion(lcd,1,0);
+        Lcd_escribeCadena(lcd,"En Transito   ");
+    }
+    break;case Mensaje_DESCARGANDO_FUERA:{
+        Lcd_establecePosicion(lcd,0,0);
+        Lcd_escribeCadena(lcd,"Descargando      ");
+        Lcd_establecePosicion(lcd,1,0);
+        Lcd_escribeCadena(lcd,"Fuera            ");
+    }
+    break;case Mensaje_DESCARGANDO_DENTRO:{
+        Lcd_establecePosicion(lcd,0,0);
+        Lcd_escribeCadena(lcd,"Descargando      ");
+        Lcd_establecePosicion(lcd,1,0);
+        Lcd_escribeCadena(lcd,"Dentro           ");
     }
     break;default:
     break;

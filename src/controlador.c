@@ -9,6 +9,7 @@ typedef struct Controlador{
     int temperaturaMaxima;
     int tiempoMaximo;
     int tiempoRestante;
+    bool finPaso;
 }Controlador;
 
 static Controlador controlador;
@@ -19,6 +20,7 @@ static void carga(Mef *m,const Evento *e);
 static void calienta(Mef *m,const Evento *e);
 static void tratamiento(Mef *m,const Evento *e);
 static void enfria(Mef *m,const Evento *e);
+static void descarga(Mef *m,const Evento *e);
 
 Mef * Controlador_init(int temperaturaMaxima,int tiempoMaximo)
 {
@@ -28,6 +30,7 @@ Mef * Controlador_init(int temperaturaMaxima,int tiempoMaximo)
     return &controlador.mef;
 }
 
+static const EventoInt temporizaPantalla = {.evento.mensaje=MensajeInt_TEMPORIZA,.valor=1000};
 
 
 static void ingresaTemperatura(Mef *m,const Evento *e)
@@ -112,7 +115,10 @@ static void carga(Mef *m,const Evento *e)
     static const Evento muestraCargando = {.mensaje=Mensaje_CARGANDO};
     static const Evento muestraEnTransito = {.mensaje=Mensaje_CARGANDO_EN_TRANSITO};
     static const Evento muestraFuera = {.mensaje=Mensaje_CARGANDO_FUERA};
+    static const Evento muestraDentro = {.mensaje=Mensaje_CARGANDO_DENTRO};
     static const Evento averiguaPosicion = {.mensaje=Mensaje_POSP};
+    static const EventoInt temporizaPantalla = {.evento.mensaje=MensajeInt_TEMPORIZA,.valor=1000};
+    
 
     const Mensaje mensaje = Evento_obtMensaje(e);
     switch (mensaje)
@@ -131,7 +137,12 @@ static void carga(Mef *m,const Evento *e)
     break; case Mensaje_RESPUESTA_ERROR:
         Mef_transiciona(m,carga);
     break;case Mensaje_RESPUESTA_DENTRO:
+        Mef_enviaEvento(m,&muestraDentro);
+        Mef_enviaEvento(m,&temporizaPantalla.evento);
+    break;case Mensaje_TIEMPO_CUMPLIDO:
         Mef_transiciona(m,calienta);
+    break;case Mensaje_NUMERAL:
+            Mef_transiciona(m,descarga); 
     break;default:
     break;
     }
@@ -143,6 +154,7 @@ static void calienta(Mef *m,const Evento *e){
     static EventoInt enviaTemperatura= {.evento.mensaje=MensajeInt_STEMP};
     static const Evento averiguaTemperatura = {.mensaje=Mensaje_TEMPP};
     static EventoInt muestraTemperatura = {.evento.mensaje=MensajeInt_CALENTANDO_TEMP};
+    static const EventoInt temporizaPantalla = {.evento.mensaje=MensajeInt_TEMPORIZA,.valor=1000};
 
     const Mensaje mensaje = Evento_obtMensaje(e);
     switch (mensaje)
@@ -155,16 +167,20 @@ static void calienta(Mef *m,const Evento *e){
         Mef_enviaEvento(m,&averiguaTemperatura);
     break;case MensajeInt_RESPUESTA_NUMERO:{
         const int t = container_of(e,const EventoInt,evento)->valor;
+        muestraTemperatura.valor = t;
+        Mef_enviaEvento(m,&muestraTemperatura.evento);
         if(t<controlador.temperatura){
-            muestraTemperatura.valor = t;
-            Mef_enviaEvento(m,&muestraTemperatura.evento);
             Mef_enviaEvento(m,&averiguaTemperatura);
         }else{
-            Mef_transiciona(m,tratamiento); //faltan condiciones
+            Mef_enviaEvento(m,&temporizaPantalla.evento);
         }    
-    } 
+    }
+    break;case Mensaje_TIEMPO_CUMPLIDO:
+        Mef_transiciona(m,tratamiento); 
     break;case Mensaje_RESPUESTA_ERROR:
-        Mef_transiciona(m,calienta);   
+        Mef_transiciona(m,calienta);  
+    break;case Mensaje_NUMERAL:
+            Mef_transiciona(m,enfria); 
     break;default:
     break; 
     }
@@ -173,7 +189,7 @@ static void calienta(Mef *m,const Evento *e){
 
 static void tratamiento(Mef *m,const Evento *e){
     static EventoInt mensajeTratamiento = {.evento.mensaje=MensajeInt_TRATAMIENTO};
-    static const EventoInt mensajeTemporiza = {.evento.mensaje=MensajeInt_TEMPORIZA,.valor=1000};
+    static const EventoInt temporizaMinuto = {.evento.mensaje=MensajeInt_TEMPORIZA,.valor=1000};
     
 
     const Mensaje mensaje = Evento_obtMensaje(e);
@@ -183,15 +199,21 @@ static void tratamiento(Mef *m,const Evento *e){
         controlador.tiempoRestante = controlador.tiempo;
         mensajeTratamiento.valor = controlador.tiempoRestante;
         Mef_enviaEvento(m,&mensajeTratamiento.evento);
-        Mef_enviaEvento(m,&mensajeTemporiza.evento);
+        Mef_enviaEvento(m,&temporizaMinuto.evento);
     break; case Mensaje_TIEMPO_CUMPLIDO:
-        if(controlador.tiempoRestante > 1){
+        if(controlador.tiempoRestante != 0){
             mensajeTratamiento.valor = --controlador.tiempoRestante;
             Mef_enviaEvento(m,&mensajeTratamiento.evento);
-            Mef_enviaEvento(m,&mensajeTemporiza.evento);
+            if(controlador.tiempoRestante == 0){
+                Mef_enviaEvento(m,&temporizaPantalla.evento);
+            }else{
+                Mef_enviaEvento(m,&temporizaMinuto.evento);
+            }
         }else{
             Mef_transiciona(m,&enfria);
         }
+    break;case Mensaje_NUMERAL:
+            Mef_transiciona(m,enfria); 
     break;default:
     break; 
     }
@@ -208,6 +230,7 @@ static void enfria(Mef *m,const Evento *e){
     switch (mensaje)
     {
     case Mensaje_ENTRADA:
+        controlador.finPaso = false;
         temperaturaFinal.valor = 0;
         Mef_enviaEvento(m,&temperaturaFinal.evento);
         Mef_enviaEvento(m,&muestraEnfriamiento);
@@ -215,16 +238,62 @@ static void enfria(Mef *m,const Evento *e){
         Mef_enviaEvento(m,&averiguaTemperatura);
     break;case MensajeInt_RESPUESTA_NUMERO:{
         const int t = container_of(e,const EventoInt,evento)->valor;
-        const int T = 40;
-        if(t>T){
+        const int temperaturaFria = 40;
+        muestraTempEnfriamiento.valor = t;
+        Mef_enviaEvento(m,&muestraTempEnfriamiento.evento);
+        if(t>temperaturaFria){
             Mef_enviaEvento(m,&averiguaTemperatura);
-            muestraTempEnfriamiento.valor = t;
-            Mef_enviaEvento(m,&muestraTempEnfriamiento.evento);
+        }else{
+            controlador.finPaso = true;
+            Mef_enviaEvento(m,&temporizaPantalla.evento);
         }
     }
+    break;case Mensaje_TIEMPO_CUMPLIDO:
+        if(controlador.finPaso){
+            Mef_transiciona(m,&descarga);
+        }
     break;case Mensaje_RESPUESTA_ERROR:
         Mef_transiciona(m,enfria);  
     break;default:
     break;
     }
+}
+
+
+static void descarga(Mef *m,const Evento *e){
+    static const Evento establecePosicionFinal = {.mensaje=Mensaje_SPOS_FUERA};
+    static const Evento muestraDescargando = {.mensaje=Mensaje_DESCARGANDO};
+    static const Evento muestraEnTransito = {.mensaje=Mensaje_DESCARGANDO_EN_TRANSITO};
+    static const Evento muestraFuera = {.mensaje=Mensaje_DESCARGANDO_FUERA};
+    static const Evento averiguaPosicion = {.mensaje=Mensaje_POSP};
+    static const Evento muestraDentro = {.mensaje=Mensaje_DESCARGANDO_DENTRO};
+
+    const Mensaje mensaje = Evento_obtMensaje(e);
+    switch (mensaje)
+    {
+    case Mensaje_ENTRADA:
+        controlador.finPaso = false;
+        Mef_enviaEvento(m,&establecePosicionFinal);
+        Mef_enviaEvento(m,&muestraDescargando);
+    break;case Mensaje_RESPUESTA_OK:
+        Mef_enviaEvento(m,&averiguaPosicion);
+    break;case Mensaje_RESPUESTA_EN_TRANSITO:
+        Mef_enviaEvento(m,&muestraEnTransito);
+        Mef_enviaEvento(m,&averiguaPosicion);
+    break;case Mensaje_RESPUESTA_FUERA:
+        controlador.finPaso = true;
+        Mef_enviaEvento(m,&muestraFuera);
+        Mef_enviaEvento(m,&temporizaPantalla.evento);
+    break;case Mensaje_TIEMPO_CUMPLIDO:
+        if(controlador.finPaso){
+            Mef_transiciona(m,ingresaTemperatura);
+        }
+    break;case Mensaje_RESPUESTA_DENTRO:
+        Mef_enviaEvento(m,&muestraDentro);
+        Mef_enviaEvento(m,&averiguaPosicion);
+    break; case Mensaje_RESPUESTA_ERROR:
+        Mef_transiciona(m,descarga);
+    break;default:
+    break;
+    }   
 }
